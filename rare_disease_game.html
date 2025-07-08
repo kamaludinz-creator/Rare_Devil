@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rare Devil - The Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Landscape orientation optimizations */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #controls {
+                min-height: 60px;
+                padding: 5px;
+            }
+            
+            #controlPad {
+                gap: 10px;
+                padding: 8px 15px;
+            }
+            
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+            
+            #topUI {
+                min-height: 35px;
+                padding: 3px 5px;
+            }
+            
+            #gameHeader {
+                padding: 4px 8px;
+            }
+            
+            #levelName {
+                font-size: 11px;
+            }
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        #gameCanvas {
+            background: #f0f8ff;
+            touch-action: none;
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            margin: 5px;
+            flex: 1;
+            min-height: 300px;
+            width: calc(100% - 14px); /* Account for margins and borders */
+        }
+
+        #topUI {
+            position: relative;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 8px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #4a6741;
+            z-index: 100;
+            min-height: 60px;
+        }
+
+        #gameInfo {
+            background: rgba(255,255,255,0.95);
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #2c3e50;
+            font-weight: bold;
+            border: 2px solid #4ecdc4;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        #audioControls {
+            background: rgba(255,255,255,0.95);
+            padding: 6px;
+            border-radius: 10px;
+            border: 2px solid #4ecdc4;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        #muteBtn {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 16px;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+        }
+
+        #muteBtn:active {
+            background: #45b7b8;
+            transform: scale(0.95);
+        }
+
+        #progressContainer {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            right: 10px;
+            z-index: 100;
+        }
+
+        #levelTitle {
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        #levelName {
+            font-size: 16px;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin: 0;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #progressBar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #progressFill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        #controls {
+            position: relative;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-top: 2px solid #4a6741;
+            z-index: 100;
+            min-height: 100px;
+        }
+
+        #controlPad {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            background: rgba(0,0,0,0.3);
+            padding: 15px 20px;
+            border-radius: 20px;
+            border: 2px solid rgba(78, 205, 196, 0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+            max-width: 400px; /* Prevent buttons from spreading too far on wide screens */
+        }
+
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+            color: #2c3e50;
+            font-size: 26px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            box-shadow: 
+                0 4px 12px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+            border: 2px solid #4ecdc4;
+        }
+
+        .control-btn:active {
+            background: linear-gradient(145deg, #4ecdc4, #45b7b8);
+            color: white;
+            transform: scale(0.95);
+            box-shadow: 
+                0 2px 6px rgba(0,0,0,0.4),
+                inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #messageBox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 85%;
+            max-height: 70%;
+            overflow-y: auto;
+            text-align: center;
+            z-index: 200;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        #messageBox h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        #messageBox p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        #messageBox button {
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            touch-action: manipulation;
+            user-select: none;
+            min-height: 44px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        #messageBox button:active {
+            background: #45b7b8;
+            transform: scale(0.95);
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #startScreen h1 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #startScreen p {
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            max-width: 90%;
+            color: #f0f0f0;
+        }
+
+        #startBtn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            min-height: 50px;
+            min-width: 200px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            font-weight: bold;
+        }
+        
+        #startBtn:active, #startBtn:focus {
+            background: #45b7b8;
+            transform: scale(0.98);
+        }
+
+        @media (max-width: 480px) {
+            #topUI {
+                padding: 6px 8px;
+                min-height: 50px;
+            }
+            
+            #gameInfo {
+                font-size: 11px;
+                padding: 6px 10px;
+            }
+            
+            #gameHeader {
+                padding: 8px 12px;
+            }
+            
+            #levelName {
+                font-size: 14px;
+            }
+            
+            #controls {
+                padding: 12px;
+                min-height: 90px;
+            }
+            
+            #controlPad {
+                gap: 12px;
+                padding: 12px 15px;
+            }
+            
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 22px;
+                border-radius: 12px;
+            }
+            
+            #startScreen h1 {
+                font-size: 20px;
+            }
+            
+            #startScreen p {
+                font-size: 13px;
+            }
+            
+            #messageBox {
+                padding: 15px;
+                max-width: 90%;
+                border-radius: 12px;
+            }
+            
+            #messageBox h3 {
+                font-size: 16px;
+            }
+            
+            #messageBox p {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            #topUI {
+                padding: 5px 6px;
+                min-height: 45px;
+            }
+            
+            #gameInfo {
+                font-size: 10px;
+                padding: 5px 8px;
+            }
+            
+            #levelName {
+                font-size: 12px;
+            }
+            
+            #controls {
+                padding: 10px;
+                min-height: 80px;
+            }
+            
+            #controlPad {
+                gap: 8px;
+                padding: 10px 12px;
+            }
+            
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+        }
+
+        @media (max-height: 600px) {
+            #topUI {
+                padding: 5px 8px;
+                min-height: 45px;
+            }
+            
+            #gameHeader {
+                padding: 6px 10px;
+            }
+            
+            #levelName {
+                font-size: 12px;
+            }
+            
+            #controls {
+                padding: 8px;
+                min-height: 75px;
+            }
+            
+            #controlPad {
+                gap: 8px;
+                padding: 8px 12px;
+            }
+            
+            .control-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 20px;
+            }
+            
+            #startScreen {
+                padding: 15px;
+            }
+            
+            #startScreen h1 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            
+            #startScreen p {
+                font-size: 12px;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-height: 500px) {
+            #topUI {
+                min-height: 40px;
+                padding: 4px 6px;
+            }
+            
+            #gameHeader {
+                padding: 5px 8px;
+            }
+            
+            #controls {
+                min-height: 70px;
+                padding: 6px;
+            }
+            
+            #controlPad {
+                gap: 6px;
+                padding: 6px 10px;
+            }
+            
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="startScreen">
+            <h1>⚡ Rare Devil - The Challenge</h1>
+            <p>Navigate the deceptive healthcare maze where nothing is as it seems. Each hidden obstacle represents real challenges faced by rare disease patients. Can you reach early diagnosis and treatment?</p>
+            <p style="font-size: 12px; color: #ddd; margin-bottom: 20px;">
+                📱 Use the directional buttons: ← ↑ → ↓ to navigate<br>
+                ⚠️ Beware: Hidden traps lurk everywhere
+            </p>
+            <button id="startBtn">🚀 Enter The Challenge</button>
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="topUI">
+            <div id="gameInfo">
+                <div>Stage: <span id="level">1</span> / 5</div>
+                <div>Lives: <span id="lives">3</span> ❤️</div>
+                <div style="font-size: 11px; color: #ccc;">Goal: Early Treatment</div>
+            </div>
+            
+            <div id="audioControls">
+                <button id="muteBtn">🔊</button>
+            </div>
+        </div>
+        
+        <div id="levelTitle">
+            <h2 id="levelName">Recognizing Symptoms</h2>
+        </div>
+        
+        <div id="progressContainer">
+            <div id="progressBar">
+                <div id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div id="controls">
+            <button class="control-btn" id="upBtn">↑</button>
+            <button class="control-btn" id="leftBtn">←</button>
+            <button class="control-btn" id="rightBtn">→</button>
+            <button class="control-btn" id="downBtn">↓</button>
+        </div>
+        
+        <div id="messageBox">
+            <h3 id="challengeTitle"></h3>
+            <p id="challengeText"></p>
+            <button id="continueBtn">Continue Journey</button>
+        </div>
+    </div>
+
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing game...');
+            
+            // Get DOM elements
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const startScreen = document.getElementById('startScreen');
+            const messageBox = document.getElementById('messageBox');
+            
+            // Game state - Initialize first
+            let gameState = {
+                level: 1,
+                lives: 3,
+                player: {
+                    x: 1,
+                    y: 1,
+                    icon: '🚶'
+                },
+                camera: { x: 0, y: 0 },
+                gameRunning: false,
+                showingMessage: false,
+                cellSize: 30,
+                visitedCells: new Set(),
+                progress: 0,
+                audio: {
+                    enabled: true,
+                    context: null
+                }
+            };
+            
+            // Challenge messages with varied data points
+            const challenges = {
+                misdiagnosis: [
+                    {
+                        title: "Challenge: Diagnostic Delay",
+                        text: "You've encountered a misdiagnosis dead-end. Patients typically visit 8 physicians and receive 2-3 misdiagnoses before correct diagnosis, taking 5.6-7.6 years on average."
+                    },
+                    {
+                        title: "Challenge: Medical Confusion",
+                        text: "Wrong turn! 42.8% of medical professionals in India have never seen a rare disease patient, leading to frequent misdiagnoses and delayed care."
+                    },
+                    {
+                        title: "Challenge: Diagnostic Odyssey",
+                        text: "Blocked path ahead! Studies show that 40% of patients receive more than 1 misdiagnosis, with some visiting up to 20 specialists before getting answers."
+                    }
+                ],
+                cost: [
+                    {
+                        title: "Challenge: Financial Barrier",
+                        text: "Treatment costs have blocked your path. Orphan drugs can cost ₹10 lakh to ₹1 crore annually in India, making them unaffordable for most families."
+                    },
+                    {
+                        title: "Challenge: Economic Burden",
+                        text: "Financial wall encountered! The NPRD 2021 provides only ₹50 lakh cap, while some treatments exceed ₹16 crore - a devastating gap for patients."
+                    },
+                    {
+                        title: "Challenge: Price Shock",
+                        text: "Cost trap activated! Orphan drugs are 13.8 times more expensive than conventional drugs, creating insurmountable financial barriers."
+                    }
+                ],
+                access: [
+                    {
+                        title: "Challenge: Treatment Access Denied",
+                        text: "The treatment door is locked. Over 90% of rare diseases have no approved treatments, leaving patients with limited options."
+                    },
+                    {
+                        title: "Challenge: Availability Crisis",
+                        text: "Access blocked! Only ~10% of eligible patients receive available treatments due to regulatory delays and distribution challenges."
+                    },
+                    {
+                        title: "Challenge: Supply Chain Failure",
+                        text: "Treatment unavailable! Even when therapies exist, supply chain issues and import restrictions create dangerous delays in India."
+                    }
+                ],
+                awareness: [
+                    {
+                        title: "Challenge: Knowledge Gap",
+                        text: "You've hit a wall of unawareness. A 2019 survey found extremely low knowledge about rare diseases among healthcare providers in India."
+                    },
+                    {
+                        title: "Challenge: Education Deficit",
+                        text: "Awareness trap! Medical curricula spend less than 2% of time on rare diseases, leaving doctors unprepared to recognize symptoms."
+                    },
+                    {
+                        title: "Challenge: Information Void",
+                        text: "Knowledge barrier encountered! 73% of rare disease patients report that their initial doctors had never heard of their condition."
+                    }
+                ],
+                policy: [
+                    {
+                        title: "Challenge: Policy Maze",
+                        text: "Lost in bureaucratic confusion. India lacks comprehensive rare disease registries, hampering research and treatment development."
+                    },
+                    {
+                        title: "Challenge: Regulatory Gridlock",
+                        text: "Policy trap activated! The NPRD 2021 faces implementation hurdles with chronic underutilization of allocated ₹100 crore funds."
+                    },
+                    {
+                        title: "Challenge: System Failure",
+                        text: "Bureaucratic dead-end! Orphan drug approval takes 3-7 years in India vs 1-2 years in developed countries, delaying life-saving treatments."
+                    }
+                ],
+                specialist: {
+                    title: "Progress: Specialist Found",
+                    text: "You've found a rare disease specialist! This is a crucial step forward. However, India has only ~200 geneticists for 1.4 billion people, creating long waiting times."
+                },
+                diagnosis: {
+                    title: "Major Progress: Diagnosis Achieved",
+                    text: "Congratulations! You've received an accurate diagnosis. This typically takes 4-5 years and involves consulting 5-7 doctors. You're now 60% through the journey."
+                },
+                treatment: {
+                    title: "Success: Treatment Access",
+                    text: "You've successfully navigated to treatment access! You've overcome financial, regulatory, and logistical barriers that prevent 95% of Indian rare disease patients from reaching this stage."
+                }
+            };
+            
+            // Maze layouts
+            const mazes = [
+                {
+                    name: "Recognizing Symptoms",
+                    width: 15,
+                    height: 10,
+                    layout: [
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        [1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
+                        [1,0,1,0,1,0,1,1,1,0,1,0,1,0,1],
+                        [1,0,1,0,0,0,0,0,1,0,0,0,1,0,1],
+                        [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,0,1,1,1,2,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,1,1,1,1,1,1,1,1,0,1],
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                    ],
+                    traps: [{x: 7, y: 3, type: 'awareness'}, {x: 9, y: 5, type: 'misdiagnosis'}],
+                    start: {x: 1, y: 1},
+                    goal: {x: 13, y: 6}
+                },
+                {
+                    name: "Primary Care Consultation",
+                    width: 18,
+                    height: 12,
+                    layout: [
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1],
+                        [1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,2,1],
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                    ],
+                    traps: [{x: 5, y: 3, type: 'misdiagnosis'}, {x: 11, y: 5, type: 'awareness'}, {x: 8, y: 7, type: 'misdiagnosis'}],
+                    start: {x: 1, y: 1},
+                    goal: {x: 16, y: 10}
+                },
+                {
+                    name: "Finding Specialists",
+                    width: 20,
+                    height: 15,
+                    layout: [
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,1,0,1],
+                        [1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1],
+                        [1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                    ],
+                    traps: [{x: 7, y: 3, type: 'misdiagnosis'}, {x: 12, y: 5, type: 'awareness'}, {x: 5, y: 8, type: 'cost'}, {x: 15, y: 10, type: 'access'}],
+                    start: {x: 1, y: 1},
+                    goal: {x: 18, y: 13},
+                    special: {x: 18, y: 13, type: 'specialist'}
+                },
+                {
+                    name: "Diagnostic Testing",
+                    width: 22,
+                    height: 16,
+                    layout: [
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,1],
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                    ],
+                    traps: [{x: 8, y: 3, type: 'cost'}, {x: 14, y: 5, type: 'misdiagnosis'}, {x: 6, y: 9, type: 'policy'}, {x: 16, y: 11, type: 'access'}],
+                    start: {x: 1, y: 1},
+                    goal: {x: 20, y: 14},
+                    special: {x: 20, y: 14, type: 'diagnosis'}
+                },
+                {
+                    name: "Accessing Treatment",
+                    width: 25,
+                    height: 18,
+                    layout: [
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1,1,1,1],
+                        [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],
+                        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,5,1],
+                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                    ],
+                    traps: [{x: 9, y: 3, type: 'cost'}, {x: 15, y: 5, type: 'access'}, {x: 7, y: 9, type: 'policy'}, {x: 18, y: 11, type: 'cost'}, {x: 12, y: 13, type: 'access'}],
+                    start: {x: 1, y: 1},
+                    goal: {x: 23, y: 16},
+                    special: {x: 23, y: 16, type: 'treatment'}
+                }
+            ];
+            
+            let currentMaze = mazes[0];
+            
+            // Canvas sizing - Simplified and fixed
+            function resizeCanvas() {
+                // Wait for layout to be ready
+                setTimeout(() => {
+                    const canvasRect = canvas.getBoundingClientRect();
+                    
+                    // Set canvas dimensions based on its container size
+                    canvas.width = Math.max(300, canvasRect.width - 10); // Minimum width with padding
+                    canvas.height = Math.max(400, canvasRect.height - 10); // Minimum height with padding
+                    
+                    // Calculate optimal cell size for the canvas
+                    if (canvas.width < 400) {
+                        gameState.cellSize = Math.max(20, Math.min(canvas.width / 15, 35));
+                    } else if (canvas.width < 600) {
+                        gameState.cellSize = Math.max(25, Math.min(canvas.width / 18, 40));
+                    } else {
+                        gameState.cellSize = Math.max(30, Math.min(canvas.width / 20, 45));
+                    }
+                    
+                    console.log('Canvas sized:', canvas.width, 'x', canvas.height, 'Cell size:', gameState.cellSize);
+                }, 100);
+            }
+            
+            // Enhanced audio system with background music
+            let audioInitialized = false;
+            let backgroundMusic = null;
+            
+            function initAudio() {
+                if (audioInitialized || !gameState.audio.enabled) return;
+                
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    gameState.audio.context = audioContext;
+                    gameState.audio.enabled = true;
+                    audioInitialized = true;
+                    
+                    // Create background music
+                    createBackgroundMusic(audioContext);
+                    
+                    console.log("Audio initialized with background music");
+                } catch (error) {
+                    console.log("Audio not available:", error);
+                    gameState.audio.enabled = false;
+                }
+            }
+            
+            function createBackgroundMusic(audioContext) {
+                try {
+                    // Create a gentle, ambient background melody
+                    const masterGain = audioContext.createGain();
+                    masterGain.connect(audioContext.destination);
+                    masterGain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    
+                    // Create reverb effect
+                    const convolver = audioContext.createConvolver();
+                    const bufferSize = audioContext.sampleRate * 2;
+                    const buffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate);
+                    
+                    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+                        const channelData = buffer.getChannelData(channel);
+                        for (let i = 0; i < bufferSize; i++) {
+                            channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+                        }
+                    }
+                    convolver.buffer = buffer;
+                    convolver.connect(masterGain);
+                    
+                    // Create filter for warmth
+                    const filter = audioContext.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(800, audioContext.currentTime);
+                    filter.connect(convolver);
+                    
+                    // Melody notes (pentatonic scale for pleasant sound)
+                    const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // C4, D4, E4, G4, A4, C5
+                    const pattern = [0, 2, 4, 3, 1, 4, 2, 0]; // Note pattern indices
+                    
+                    let noteIndex = 0;
+                    let isPlaying = false;
+                    
+                    function playNextNote() {
+                        if (!gameState.audio.enabled || !gameState.gameRunning) {
+                            setTimeout(playNextNote, 2000);
+                            return;
+                        }
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const noteGain = audioContext.createGain();
+                        
+                        oscillator.connect(noteGain);
+                        noteGain.connect(filter);
+                        
+                        // Set frequency based on pattern
+                        const frequency = notes[pattern[noteIndex % pattern.length]];
+                        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                        oscillator.type = 'sine';
+                        
+                        // Envelope for smooth attack and release
+                        noteGain.gain.setValueAtTime(0, audioContext.currentTime);
+                        noteGain.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+                        noteGain.gain.exponentialRampToValueAtTime(0.1, audioContext.currentTime + 1.5);
+                        noteGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 2);
+                        
+                        noteIndex++;
+                        
+                        // Schedule next note
+                        setTimeout(playNextNote, 2500 + Math.random() * 1000); // Vary timing slightly
+                    }
+                    
+                    backgroundMusic = {
+                        start: () => {
+                            if (!isPlaying) {
+                                isPlaying = true;
+                                playNextNote();
+                            }
+                        },
+                        stop: () => {
+                            isPlaying = false;
+                        }
+                    };
+                    
+                } catch (error) {
+                    console.log("Background music creation failed:", error);
+                }
+            }
+            
+            function startBackgroundMusic() {
+                if (backgroundMusic && gameState.audio.enabled) {
+                    backgroundMusic.start();
+                }
+            }
+            
+            function stopBackgroundMusic() {
+                if (backgroundMusic) {
+                    backgroundMusic.stop();
+                }
+            }
+            
+            function playSound(type) {
+                if (!gameState.audio.enabled || !gameState.audio.context) return;
+                
+                try {
+                    const ctx = gameState.audio.context;
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    const filterNode = ctx.createBiquadFilter();
+                    
+                    oscillator.connect(filterNode);
+                    filterNode.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    
+                    switch(type) {
+                        case 'move':
+                            oscillator.frequency.setValueAtTime(400, ctx.currentTime);
+                            oscillator.type = 'sine';
+                            filterNode.frequency.setValueAtTime(800, ctx.currentTime);
+                            gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                            break;
+                        case 'trap':
+                            oscillator.frequency.setValueAtTime(150, ctx.currentTime);
+                            oscillator.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+                            oscillator.type = 'sawtooth';
+                            filterNode.frequency.setValueAtTime(300, ctx.currentTime);
+                            gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                            break;
+                        case 'goal':
+                            // Happy ascending chord
+                            oscillator.frequency.setValueAtTime(523, ctx.currentTime); // C5
+                            oscillator.frequency.setValueAtTime(659, ctx.currentTime + 0.1); // E5
+                            oscillator.frequency.setValueAtTime(784, ctx.currentTime + 0.2); // G5
+                            oscillator.type = 'sine';
+                            filterNode.frequency.setValueAtTime(2000, ctx.currentTime);
+                            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                            break;
+                    }
+                    
+                    oscillator.start();
+                    oscillator.stop(ctx.currentTime + (type === 'goal' ? 0.4 : type === 'trap' ? 0.3 : 0.1));
+                } catch (error) {
+                    console.log("Sound error:", error);
+                }
+            }
+            
+            // Game functions
+            function updateCamera() {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                // Center camera on player - no UI overlap to worry about
+                gameState.camera.x = (gameState.player.x * gameState.cellSize) - centerX;
+                gameState.camera.y = (gameState.player.y * gameState.cellSize) - centerY;
+                
+                // Keep camera within maze bounds
+                const maxCameraX = Math.max(0, (currentMaze.width * gameState.cellSize) - canvas.width);
+                const maxCameraY = Math.max(0, (currentMaze.height * gameState.cellSize) - canvas.height);
+                
+                if (gameState.camera.x < 0) gameState.camera.x = 0;
+                if (gameState.camera.y < 0) gameState.camera.y = 0;
+                if (gameState.camera.x > maxCameraX) gameState.camera.x = maxCameraX;
+                if (gameState.camera.y > maxCameraY) gameState.camera.y = maxCameraY;
+            }
+            
+            function updateProgress() {
+                const totalCells = currentMaze.width * currentMaze.height;
+                const visitedCount = gameState.visitedCells.size;
+                const baseProgress = ((gameState.level - 1) / mazes.length) * 100;
+                const levelProgress = (visitedCount / totalCells) * (100 / mazes.length);
+                gameState.progress = Math.min(baseProgress + levelProgress, 100);
+                
+                document.getElementById('progressFill').style.width = gameState.progress + '%';
+            }
+            
+            function movePlayer(deltaX, deltaY) {
+                if (gameState.showingMessage || !gameState.gameRunning) return;
+                
+                const newX = gameState.player.x + deltaX;
+                const newY = gameState.player.y + deltaY;
+                
+                if (newX >= 0 && newX < currentMaze.width && 
+                    newY >= 0 && newY < currentMaze.height && 
+                    currentMaze.layout[newY][newX] !== 1) {
+                    
+                    gameState.player.x = newX;
+                    gameState.player.y = newY;
+                    
+                    playSound('move');
+                    gameState.visitedCells.add(`${newX},${newY}`);
+                    checkTraps();
+                    
+                    if (newX === currentMaze.goal.x && newY === currentMaze.goal.y) {
+                        reachGoal();
+                    }
+                    
+                    updateCamera();
+                    updateProgress();
+                }
+            }
+            
+            function checkTraps() {
+                currentMaze.traps.forEach(trap => {
+                    if (trap.x === gameState.player.x && trap.y === gameState.player.y) {
+                        playSound('trap');
+                        showChallenge(trap.type);
+                    }
+                });
+            }
+            
+            function reachGoal() {
+                playSound('goal');
+                if (currentMaze.special) {
+                    showChallenge(currentMaze.special.type);
+                } else {
+                    nextLevel();
+                }
+            }
+            
+            function showChallenge(challengeType) {
+                let challenge;
+                
+                // Select random challenge variation for trap types
+                if (Array.isArray(challenges[challengeType])) {
+                    const randomIndex = Math.floor(Math.random() * challenges[challengeType].length);
+                    challenge = challenges[challengeType][randomIndex];
+                } else {
+                    challenge = challenges[challengeType];
+                }
+                
+                document.getElementById('challengeTitle').textContent = challenge.title;
+                document.getElementById('challengeText').textContent = challenge.text;
+                messageBox.style.display = 'block';
+                gameState.showingMessage = true;
+                
+                if (challengeType === 'specialist' || challengeType === 'diagnosis' || challengeType === 'treatment') {
+                    document.getElementById('continueBtn').textContent = "Continue to Next Stage";
+                    document.getElementById('continueBtn').onclick = () => {
+                        messageBox.style.display = 'none';
+                        gameState.showingMessage = false;
+                        if (challengeType === 'treatment') {
+                            showVictory();
+                        } else {
+                            nextLevel();
+                        }
+                    };
+                } else {
+                    document.getElementById('continueBtn').textContent = "Try Again";
+                    document.getElementById('continueBtn').onclick = () => {
+                        messageBox.style.display = 'none';
+                        gameState.showingMessage = false;
+                        respawnPlayer();
+                    };
+                }
+            }
+            
+            function nextLevel() {
+                if (gameState.level < mazes.length) {
+                    gameState.level++;
+                    document.getElementById('level').textContent = gameState.level;
+                    initLevel();
+                } else {
+                    showVictory();
+                }
+            }
+            
+            function showVictory() {
+                stopBackgroundMusic();
+                playSound('goal');
+                
+                document.getElementById('challengeTitle').textContent = "🎉 Challenge Completed!";
+                document.getElementById('challengeText').textContent = "Congratulations! You've successfully navigated through all stages of Rare Devil's deceptive healthcare maze. You've experienced the hidden traps and challenges that rare disease patients face daily. Thank you for building awareness about rare diseases.";
+                document.getElementById('continueBtn').textContent = "Face The Challenge Again";
+                document.getElementById('continueBtn').onclick = () => location.reload();
+                messageBox.style.display = 'block';
+                gameState.showingMessage = true;
+            }
+            
+            function respawnPlayer() {
+                gameState.lives--;
+                document.getElementById('lives').textContent = gameState.lives;
+                
+                if (gameState.lives <= 0) {
+                    stopBackgroundMusic();
+                    document.getElementById('challengeTitle').textContent = "Challenge Failed";
+                    document.getElementById('challengeText').textContent = "Rare Devil's traps proved too deceptive. The hidden barriers in the healthcare system overwhelmed your journey. In reality, many patients face these same invisible obstacles repeatedly. Don't give up - each attempt builds knowledge and resilience.";
+                    document.getElementById('continueBtn').textContent = "Retry The Challenge";
+                    document.getElementById('continueBtn').onclick = () => location.reload();
+                    messageBox.style.display = 'block';
+                    gameState.showingMessage = true;
+                    return;
+                }
+                
+                gameState.player.x = currentMaze.start.x;
+                gameState.player.y = currentMaze.start.y;
+                gameState.player.icon = '🚶';
+                updateCamera();
+            }
+            
+            function initLevel() {
+                currentMaze = mazes[gameState.level - 1];
+                gameState.player.x = currentMaze.start.x;
+                gameState.player.y = currentMaze.start.y;
+                
+                // Update level title display
+                document.getElementById('levelName').textContent = currentMaze.name;
+                
+                switch(gameState.level) {
+                    case 1: gameState.player.icon = '🚶'; break;
+                    case 2: gameState.player.icon = '🤔'; break;
+                    case 3: gameState.player.icon = '🔍'; break;
+                    case 4: gameState.player.icon = '🏥'; break;
+                    case 5: gameState.player.icon = '💊'; break;
+                    default: gameState.player.icon = '🚶';
+                }
+                
+                gameState.visitedCells.clear();
+                updateCamera();
+                updateProgress();
+            }
+            
+            function render() {
+                // Clear canvas with a visible background
+                ctx.fillStyle = '#f0f8ff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Debug: Draw a border to show canvas is working
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+                
+                if (!currentMaze || gameState.cellSize <= 0) {
+                    // Debug text if maze isn't ready
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Loading Maze...', canvas.width / 2, canvas.height / 2);
+                    return;
+                }
+                
+                ctx.save();
+                ctx.translate(-gameState.camera.x, -gameState.camera.y);
+                
+                // Draw maze with enhanced visuals
+                for (let y = 0; y < currentMaze.height; y++) {
+                    for (let x = 0; x < currentMaze.width; x++) {
+                        const cell = currentMaze.layout[y][x];
+                        const cellX = x * gameState.cellSize;
+                        const cellY = y * gameState.cellSize;
+                        
+                        if (cell === 1) {
+                            // Enhanced wall rendering
+                            ctx.fillStyle = '#2c3e50';
+                            ctx.fillRect(cellX, cellY, gameState.cellSize, gameState.cellSize);
+                            
+                            // Add wall borders for better definition
+                            ctx.strokeStyle = '#1a252f';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(cellX, cellY, gameState.cellSize, gameState.cellSize);
+                        } else {
+                            // Enhanced path rendering
+                            const isVisited = gameState.visitedCells.has(`${x},${y}`);
+                            ctx.fillStyle = isVisited ? '#e8f5e8' : '#ffffff';
+                            ctx.fillRect(cellX, cellY, gameState.cellSize, gameState.cellSize);
+                            
+                            // Add subtle grid lines
+                            ctx.strokeStyle = isVisited ? '#d4e6d4' : '#e9ecef';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(cellX, cellY, gameState.cellSize, gameState.cellSize);
+                        }
+                    }
+                }
+                
+                // Enhanced goal rendering
+                const goalX = currentMaze.goal.x * gameState.cellSize;
+                const goalY = currentMaze.goal.y * gameState.cellSize;
+                const time = Date.now() * 0.005;
+                const glow = Math.sin(time) * 0.3 + 0.7;
+                const goalPadding = Math.max(2, gameState.cellSize * 0.1);
+                
+                // Goal background with animated glow
+                if (currentMaze.special) {
+                    if (currentMaze.special.type === 'specialist') {
+                        ctx.fillStyle = `rgba(52, 152, 219, ${glow})`;
+                    } else if (currentMaze.special.type === 'diagnosis') {
+                        ctx.fillStyle = `rgba(155, 89, 182, ${glow})`;
+                    } else if (currentMaze.special.type === 'treatment') {
+                        ctx.fillStyle = `rgba(46, 204, 113, ${glow})`;
+                    }
+                } else {
+                    ctx.fillStyle = `rgba(46, 204, 113, ${glow})`;
+                }
+                
+                ctx.fillRect(goalX + goalPadding, goalY + goalPadding, 
+                            gameState.cellSize - (goalPadding * 2), gameState.cellSize - (goalPadding * 2));
+                
+                // Goal border
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(goalX + goalPadding, goalY + goalPadding, 
+                              gameState.cellSize - (goalPadding * 2), gameState.cellSize - (goalPadding * 2));
+                
+                // Goal emoji with better sizing
+                const fontSize = Math.max(12, gameState.cellSize * 0.4);
+                ctx.font = `${fontSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                ctx.fillStyle = '#fff';
+                const goalEmoji = currentMaze.special ? 
+                    (currentMaze.special.type === 'specialist' ? '👨‍⚕️' : 
+                     currentMaze.special.type === 'diagnosis' ? '🔬' : 
+                     currentMaze.special.type === 'treatment' ? '💊' : '🎯') : '🎯';
+                
+                ctx.fillText(goalEmoji, goalX + gameState.cellSize/2, goalY + gameState.cellSize/2);
+                
+                // Enhanced player rendering
+                const playerX = gameState.player.x * gameState.cellSize;
+                const playerY = gameState.player.y * gameState.cellSize;
+                const iconSize = Math.max(16, gameState.cellSize * 0.6);
+                
+                // Player shadow
+                ctx.font = `${iconSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillText(gameState.player.icon, 
+                    playerX + gameState.cellSize/2 + 1, 
+                    playerY + gameState.cellSize/2 + 1);
+                
+                // Player icon
+                ctx.fillStyle = '#333';
+                ctx.fillText(gameState.player.icon, 
+                    playerX + gameState.cellSize/2, 
+                    playerY + gameState.cellSize/2);
+                
+                ctx.restore();
+            }
+            
+            function gameLoop() {
+                if (!gameState.gameRunning) return;
+                render();
+                requestAnimationFrame(gameLoop);
+            }
+            
+            // Movement controls
+            const controlButtons = [
+                {id: 'upBtn', dir: {x: 0, y: -1}},
+                {id: 'leftBtn', dir: {x: -1, y: 0}},
+                {id: 'rightBtn', dir: {x: 1, y: 0}},
+                {id: 'downBtn', dir: {x: 0, y: 1}}
+            ];
+            
+            controlButtons.forEach(btn => {
+                const element = document.getElementById(btn.id);
+                
+                element.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    movePlayer(btn.dir.x, btn.dir.y);
+                });
+                
+                element.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    movePlayer(btn.dir.x, btn.dir.y);
+                });
+            });
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (gameState.showingMessage || !gameState.gameRunning) return;
+                
+                let moved = false;
+                switch(e.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        movePlayer(0, -1);
+                        moved = true;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        movePlayer(0, 1);
+                        moved = true;
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        movePlayer(-1, 0);
+                        moved = true;
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        movePlayer(1, 0);
+                        moved = true;
+                        break;
+                }
+                
+                if (moved) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Start game function
+            function startGame() {
+                console.log('Starting game...');
+                try {
+                    startScreen.style.display = 'none';
+                    gameState.gameRunning = true;
+                    
+                    // Ensure canvas is properly sized
+                    setTimeout(() => {
+                        resizeCanvas();
+                        initLevel();
+                        gameLoop();
+                        
+                        // Start background music after a short delay
+                        setTimeout(() => {
+                            startBackgroundMusic();
+                        }, 1000);
+                        
+                        console.log('Game started successfully');
+                    }, 100);
+                    
+                    initAudio();
+                } catch (error) {
+                    console.error('Error starting game:', error);
+                }
+            }
+            
+            // Start button event
+            const startBtn = document.getElementById('startBtn');
+            let buttonPressed = false;
+            
+            function handleStart(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (buttonPressed) return;
+                buttonPressed = true;
+                
+                startBtn.style.background = '#45b7b8';
+                startBtn.textContent = 'Loading...';
+                
+                setTimeout(startGame, 100);
+            }
+            
+            startBtn.addEventListener('click', handleStart);
+            startBtn.addEventListener('touchend', handleStart);
+            
+            // Mute button
+            document.getElementById('muteBtn').addEventListener('click', () => {
+                gameState.audio.enabled = !gameState.audio.enabled;
+                const btn = document.getElementById('muteBtn');
+                btn.textContent = gameState.audio.enabled ? '🔊' : '🔇';
+                
+                if (gameState.audio.enabled && gameState.gameRunning) {
+                    startBackgroundMusic();
+                } else {
+                    stopBackgroundMusic();
+                }
+            });
+            
+            // Initialize canvas and start game
+            console.log('Initializing canvas...');
+            resizeCanvas();
+            
+            // Ensure canvas is properly sized before starting game loop
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                if (gameState.gameRunning) {
+                    updateCamera();
+                }
+            });
+            
+            // Force a resize after a short delay to ensure layout is ready
+            setTimeout(() => {
+                resizeCanvas();
+                updateCamera();
+            }, 200);
+            
+            // Prevent touch scrolling on canvas
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+            
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+            
+            console.log('Game initialization complete');
+        });
+    </script>
+</body>
+</html>
