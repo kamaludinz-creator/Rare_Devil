@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rare Devil - Neurofibromatosis Awareness Maze</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: white;
+            color: black;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: black;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-title {
+            flex: 1;
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .header-title p {
+            font-size: 0.875rem;
+        }
+
+        .audio-btn {
+            background: #374151;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .audio-btn:hover {
+            background: #4B5563;
+        }
+
+        .question-count {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .maze-container {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            gap: 0;
+            border: 2px solid black;
+            background: black;
+            aspect-ratio: 14/13;
+            max-height: 65vh;
+            max-width: 95vw;
+            min-height: 300px;
+        }
+
+        .maze-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            position: relative;
+            min-height: 0;
+            min-width: 0;
+        }
+
+        .maze-wall {
+            background: black;
+        }
+
+        .maze-path {
+            background: white;
+        }
+
+        .maze-goal {
+            background: white;
+            border: 1px solid #D1D5DB;
+        }
+
+        .player {
+            width: 1rem;
+            height: 1rem;
+            background: black;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .goal-star {
+            font-weight: bold;
+            font-size: 1.125rem;
+            color: black;
+        }
+
+        .blocked-indicator {
+            position: absolute;
+            inset: 0;
+            background: rgba(239, 68, 68, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+
+        .blocked-path {
+            background: rgba(220, 38, 38, 0.4);
+        }
+
+        .instructions {
+            padding: 0.5rem 1rem;
+            text-align: center;
+            font-size: 0.875rem;
+            border-top: 1px solid #D1D5DB;
+        }
+
+        .controls {
+            padding: 1.5rem;
+            background: #F9FAFB;
+            border-top: 1px solid #D1D5DB;
+        }
+
+        .dpad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .dpad-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .dpad-btn {
+            width: 4rem;
+            height: 4rem;
+            background: black;
+            color: white;
+            border: 2px solid #D1D5DB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.25rem;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .dpad-btn:hover {
+            background: #374151;
+        }
+
+        .dpad-btn:active {
+            background: #374151;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 50;
+        }
+
+        .modal-content {
+            background: white;
+            border: 4px solid black;
+            padding: 1.5rem;
+            max-width: 24rem;
+            width: 100%;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-weight: bold;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-subtitle {
+            font-size: 0.875rem;
+            color: #6B7280;
+            margin-bottom: 1rem;
+        }
+
+        .modal-question {
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid black;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .modal-btn-yes {
+            background: black;
+            color: white;
+        }
+
+        .modal-btn-yes:hover {
+            background: #374151;
+        }
+
+        .modal-btn-no {
+            background: white;
+            color: black;
+        }
+
+        .modal-btn-no:hover {
+            background: #F3F4F6;
+        }
+
+        .modal-info {
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+
+        .completion-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .completion-btn {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid black;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .completion-btn-primary {
+            background: black;
+            color: white;
+        }
+
+        .completion-btn-primary:hover {
+            background: #374151;
+        }
+
+        .completion-btn-secondary {
+            background: white;
+            color: black;
+        }
+
+        .completion-btn-secondary:hover {
+            background: #F3F4F6;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div></div>
+            <div class="header-title">
+                <h1>RARE DEVIL</h1>
+                <p>Balanced maze navigation with checkpoints</p>
+            </div>
+            <button class="audio-btn" id="audioBtn">🔇</button>
+        </div>
+        <div class="question-count">
+            Questions: <span id="questionCount">0</span>/3
+        </div>
+    </div>
+
+    <!-- Game Area -->
+    <div class="game-area">
+        <div class="maze-container" id="mazeContainer">
+            <!-- Maze cells will be generated here -->
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+        Navigate the maze pathways to reach the finish line (★). Hidden checkpoints will create new route challenges!
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="dpad">
+            <button class="dpad-btn" id="upBtn">↑</button>
+            <div class="dpad-row">
+                <button class="dpad-btn" id="leftBtn">←</button>
+                <button class="dpad-btn" id="rightBtn">→</button>
+            </div>
+            <button class="dpad-btn" id="downBtn">↓</button>
+        </div>
+    </div>
+
+    <!-- Pathway Question Modal -->
+    <div class="modal hidden" id="pathwayModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Path Blocked!</h3>
+            <p class="modal-subtitle">You've encountered a checkpoint.</p>
+            <p class="modal-question" id="pathwayQuestion"></p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="pathwayYes">YES</button>
+                <button class="modal-btn modal-btn-no" id="pathwayNo">NO</button>
+            </div>
+            <p class="modal-info">This path is now blocked. Find an alternative route.</p>
+        </div>
+    </div>
+
+    <!-- Final Question Modal -->
+    <div class="modal hidden" id="finalModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Final Question</h3>
+            <p class="modal-subtitle">You've reached the finish line!</p>
+            <p class="modal-question" id="finalQuestion">Have you observed any brown spots on your or someone else's eyes?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="finalYes">YES</button>
+                <button class="modal-btn modal-btn-no" id="finalNo">NO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Complete Modal -->
+    <div class="modal hidden" id="completeModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Journey Complete!</h3>
+            <p class="modal-question">You successfully navigated the maze pathways, answered all questions, and reached the finish line!</p>
+            <div class="completion-buttons">
+                <button class="completion-btn completion-btn-primary" id="learnMoreBtn">Learn More</button>
+                <button class="completion-btn completion-btn-secondary" id="playAgainBtn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            playerPos: { x: 1, y: 1 },
+            blockedPositions: new Set(),
+            encounteredBlocks: new Set(),
+            answeredQuestions: new Set(),
+            currentQuestion: null,
+            gameComplete: false,
+            showFinalQuestion: false,
+            audioEnabled: false,
+            bgMusic: null,
+            movementSound: null,
+            musicInterval: null
+        };
+
+        // Maze layout
+        const maze = [
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,0,1,1,1,1,1,1,0],
+            [0,1,0,0,0,1,0,1,0,0,0,0,1,0],
+            [0,1,1,1,0,1,1,1,1,1,1,0,1,0],
+            [0,0,0,1,0,0,0,0,0,0,1,0,1,0],
+            [0,1,1,1,1,1,1,1,1,0,1,1,1,0],
+            [0,1,0,0,0,0,0,0,1,0,0,0,0,0],
+            [0,1,1,1,1,1,1,0,1,1,1,1,1,0],
+            [0,0,0,0,0,0,1,0,0,0,0,0,1,0],
+            [0,1,1,1,1,1,1,1,1,1,1,0,1,0],
+            [0,1,0,0,0,0,0,0,0,0,1,0,1,0],
+            [0,1,1,1,1,1,1,1,1,1,1,1,2,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        ];
+
+        // Invisible blocks
+        const invisibleBlocks = [
+            {
+                x: 5,
+                y: 5,
+                id: 1,
+                question: "Have you or someone you know noticed light brown patches on the skin, like coffee stains?"
+            },
+            {
+                x: 7,
+                y: 9,
+                id: 2,
+                question: "Have you seen any soft lumps or bumps on the skin that seem to grow over time?"
+            }
+        ];
+
+        // Initialize audio
+        async function initAudio() {
+            try {
+                // Background music
+                const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                synth.volume.value = -20;
+                
+                // Movement sound
+                const moveSound = new Tone.Synth().toDestination();
+                moveSound.volume.value = -15;
+                
+                gameState.bgMusic = synth;
+                gameState.movementSound = moveSound;
+            } catch (error) {
+                console.log('Audio initialization failed:', error);
+            }
+        }
+
+        // Start audio
+        async function startAudio() {
+            try {
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+                gameState.audioEnabled = true;
+                document.getElementById('audioBtn').textContent = '🔊';
+                
+                // Start background music loop
+                if (gameState.bgMusic) {
+                    const playBgMusic = () => {
+                        gameState.bgMusic.triggerAttackRelease(['C4', 'E4', 'G4'], '2n');
+                        setTimeout(() => {
+                            gameState.bgMusic.triggerAttackRelease(['D4', 'F4', 'A4'], '2n');
+                        }, 2000);
+                        setTimeout(() => {
+                            gameState.bgMusic.triggerAttackRelease(['E4', 'G4', 'B4'], '2n');
+                        }, 4000);
+                    };
+                    
+                    playBgMusic();
+                    gameState.musicInterval = setInterval(playBgMusic, 6000);
+                }
+            } catch (error) {
+                console.log('Audio start failed:', error);
+            }
+        }
+
+        // Stop audio
+        function stopAudio() {
+            if (gameState.musicInterval) {
+                clearInterval(gameState.musicInterval);
+                gameState.musicInterval = null;
+            }
+            gameState.audioEnabled = false;
+            document.getElementById('audioBtn').textContent = '🔇';
+        }
+
+        // Play movement sound
+        function playMovementSound() {
+            if (gameState.audioEnabled && gameState.movementSound) {
+                gameState.movementSound.triggerAttackRelease('C5', '0.1');
+            }
+        }
+
+        // Generate maze HTML
+        function generateMaze() {
+            const container = document.getElementById('mazeContainer');
+            container.innerHTML = '';
+            
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[y].length; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'maze-cell';
+                    cell.id = `cell-${x}-${y}`;
+                    
+                    if (maze[y][x] === 0) {
+                        cell.classList.add('maze-wall');
+                    } else if (maze[y][x] === 2) {
+                        cell.classList.add('maze-goal');
+                    } else {
+                        cell.classList.add('maze-path');
+                    }
+                    
+                    container.appendChild(cell);
+                }
+            }
+            
+            updateMazeDisplay();
+        }
+
+        // Update maze display
+        function updateMazeDisplay() {
+            // Clear all special elements
+            document.querySelectorAll('.maze-cell').forEach(cell => {
+                cell.innerHTML = '';
+                cell.classList.remove('blocked-path');
+            });
+            
+            // Add player
+            const playerCell = document.getElementById(`cell-${gameState.playerPos.x}-${gameState.playerPos.y}`);
+            if (playerCell) {
+                const player = document.createElement('div');
+                player.className = 'player';
+                const dot = document.createElement('div');
+                dot.className = 'player-dot';
+                player.appendChild(dot);
+                playerCell.appendChild(player);
+            }
+            
+            // Add goal star
+            const goalCell = document.querySelector('.maze-goal');
+            if (goalCell) {
+                const star = document.createElement('div');
+                star.className = 'goal-star';
+                star.textContent = '★';
+                goalCell.appendChild(star);
+            }
+            
+            // Add blocked indicators
+            invisibleBlocks.forEach(block => {
+                if (gameState.encounteredBlocks.has(block.id)) {
+                    const cell = document.getElementById(`cell-${block.x}-${block.y}`);
+                    if (cell) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'blocked-indicator';
+                        indicator.textContent = '⚠';
+                        cell.appendChild(indicator);
+                    }
+                }
+            });
+            
+            // Add blocked path styling
+            gameState.blockedPositions.forEach(pos => {
+                const [x, y] = pos.split('-').map(Number);
+                const cell = document.getElementById(`cell-${x}-${y}`);
+                if (cell) {
+                    cell.classList.add('blocked-path');
+                }
+            });
+            
+            // Update question count
+            document.getElementById('questionCount').textContent = gameState.answeredQuestions.size;
+        }
+
+        // Check for invisible blocks
+        function checkInvisibleBlock(x, y) {
+            const block = invisibleBlocks.find(b => b.x === x && b.y === y && !gameState.encounteredBlocks.has(b.id));
+            if (block) {
+                gameState.currentQuestion = block;
+                gameState.encounteredBlocks.add(block.id);
+                gameState.blockedPositions.add(`${x}-${y}`);
+                showPathwayModal(block);
+                return true;
+            }
+            return false;
+        }
+
+        // Move player
+        function movePlayer(dx, dy) {
+            if (gameState.currentQuestion || gameState.gameComplete || gameState.showFinalQuestion) return;
+
+            const newX = gameState.playerPos.x + dx;
+            const newY = gameState.playerPos.y + dy;
+
+            // Check bounds and walls
+            if (newY >= 0 && newY < maze.length && newX >= 0 && newX < maze[0].length && maze[newY][newX] !== 0) {
+                
+                // Check if position is blocked
+                if (gameState.blockedPositions.has(`${newX}-${newY}`)) {
+                    return;
+                }
+
+                // Check for invisible blocks
+                if (checkInvisibleBlock(newX, newY)) {
+                    return;
+                }
+
+                // Update player position
+                gameState.playerPos = { x: newX, y: newY };
+                
+                // Play movement sound
+                playMovementSound();
+                
+                // Check if reached goal
+                if (maze[newY][newX] === 2) {
+                    gameState.showFinalQuestion = true;
+                    stopAudio();
+                    showFinalModal();
+                }
+                
+                updateMazeDisplay();
+            }
+        }
+
+        // Show pathway modal
+        function showPathwayModal(block) {
+            document.getElementById('pathwayQuestion').textContent = block.question;
+            document.getElementById('pathwayModal').classList.remove('hidden');
+        }
+
+        // Show final modal
+        function showFinalModal() {
+            document.getElementById('finalModal').classList.remove('hidden');
+        }
+
+        // Show completion modal
+        function showCompletionModal() {
+            document.getElementById('completeModal').classList.remove('hidden');
+        }
+
+        // Hide all modals
+        function hideAllModals() {
+            document.getElementById('pathwayModal').classList.add('hidden');
+            document.getElementById('finalModal').classList.add('hidden');
+            document.getElementById('completeModal').classList.add('hidden');
+        }
+
+        // Answer pathway question
+        function answerPathwayQuestion() {
+            if (gameState.currentQuestion) {
+                gameState.answeredQuestions.add(gameState.currentQuestion.id);
+                gameState.currentQuestion = null;
+                hideAllModals();
+                updateMazeDisplay();
+            }
+        }
+
+        // Answer final question
+        function answerFinalQuestion() {
+            gameState.answeredQuestions.add(3);
+            gameState.showFinalQuestion = false;
+            gameState.gameComplete = true;
+            hideAllModals();
+            showCompletionModal();
+        }
+
+        // Reset game
+        function resetGame() {
+            gameState = {
+                playerPos: { x: 1, y: 1 },
+                blockedPositions: new Set(),
+                encounteredBlocks: new Set(),
+                answeredQuestions: new Set(),
+                currentQuestion: null,
+                gameComplete: false,
+                showFinalQuestion: false,
+                audioEnabled: gameState.audioEnabled,
+                bgMusic: gameState.bgMusic,
+                movementSound: gameState.movementSound,
+                musicInterval: null
+            };
+            
+            stopAudio();
+            hideAllModals();
+            updateMazeDisplay();
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initAudio();
+            generateMaze();
+            
+            // Audio button
+            document.getElementById('audioBtn').addEventListener('click', () => {
+                if (gameState.audioEnabled) {
+                    stopAudio();
+                } else {
+                    startAudio();
+                }
+            });
+            
+            // Movement buttons
+            document.getElementById('upBtn').addEventListener('click', () => movePlayer(0, -1));
+            document.getElementById('downBtn').addEventListener('click', () => movePlayer(0, 1));
+            document.getElementById('leftBtn').addEventListener('click', () => movePlayer(-1, 0));
+            document.getElementById('rightBtn').addEventListener('click', () => movePlayer(1, 0));
+            
+            // Prevent touch scroll
+            document.querySelectorAll('.dpad-btn').forEach(btn => {
+                btn.addEventListener('touchstart', e => e.preventDefault());
+            });
+            
+            // Pathway modal buttons
+            document.getElementById('pathwayYes').addEventListener('click', answerPathwayQuestion);
+            document.getElementById('pathwayNo').addEventListener('click', answerPathwayQuestion);
+            
+            // Final modal buttons
+            document.getElementById('finalYes').addEventListener('click', answerFinalQuestion);
+            document.getElementById('finalNo').addEventListener('click', answerFinalQuestion);
+            
+            // Completion modal buttons
+            document.getElementById('learnMoreBtn').addEventListener('click', () => {
+                window.open('https://preview--rare-together-project-idea-2025.lovable.app/public', '_blank');
+            });
+            document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                    case 'W':
+                        e.preventDefault();
+                        movePlayer(0, -1);
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                    case 'S':
+                        e.preventDefault();
+                        movePlayer(0, 1);
+                        break;
+                    case 'ArrowLeft':
+                    case 'a':
+                    case 'A':
+                        e.preventDefault();
+                        movePlayer(-1, 0);
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                    case 'D':
+                        e.preventDefault();
+                        movePlayer(1, 0);
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
